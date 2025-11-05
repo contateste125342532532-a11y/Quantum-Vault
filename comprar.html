@@ -109,21 +109,19 @@
       </h3>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <!-- BRL Input -->
+        <!-- BRL Fixed -->
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">Você paga (R$)</label>
           <div class="relative">
             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">R$</span>
             <input 
-              type="number" 
+              type="text" 
               id="brl-input" 
-              value="300" 
-              min="300"
-              class="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white text-xl font-medium input-focus"
-              placeholder="300,00"
+              value="540,00" 
+              class="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white text-xl font-medium cursor-not-allowed"
+              readonly
             />
           </div>
-          <p class="text-xs text-amber-400 mt-2"></p>
         </div>
 
         <!-- BTC Output -->
@@ -136,7 +134,7 @@
             <input 
               type="text" 
               id="btc-output" 
-              class="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white text-xl font-medium" 
+              class="w-full pl-12 pr-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white text-xl font-medium cursor-not-allowed" 
               readonly
             />
           </div>
@@ -189,11 +187,11 @@
         <div class="bg-gray-800/50 p-4 rounded-xl">
           <div class="flex justify-between text-sm mb-2">
             <span class="text-gray-400">Você paga:</span>
-            <span class="text-white font-medium" id="final-brl">R$300,00</span>
+            <span class="text-white font-medium" id="final-brl">R$540,00</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-400">Você recebe:</span>
-            <span class="text-purple-300 font-medium" id="final-btc-value">0.000694 BTC</span>
+            <span class="text-purple-300 font-medium" id="final-btc-value">0.001249 BTC</span>
           </div>
           <div class="flex justify-between text-sm mt-3 pt-3 border-t border-gray-700">
             <span class="text-gray-400">Taxa de rede:</span>
@@ -216,109 +214,80 @@
     </div>
   </div>
 
-<script>
-  let BTC_PRICE = 432187.42;
-  const MIN_BRL = 300;
+  <script>
+    let BTC_PRICE = 432187.42;
+    const FIXED_BRL = 540;
+    const MIN_BRL = 540;
 
-  const brlInput = document.getElementById('brl-input');
-  const btcOutput = document.getElementById('btc-output');
-  const btcPriceEl = document.getElementById('btc-price');
-  const buyButton = document.querySelector('.btn-primary');
-  const minWarning = document.createElement('p');
-  minWarning.id = 'min-warning';
-  minWarning.className = 'text-xs text-red-400 mt-2 hidden';
-  minWarning.textContent = 'Valor mínimo: R$300,00';
-  brlInput.parentElement.appendChild(minWarning);
+    const brlInput = document.getElementById('brl-input');
+    const btcOutput = document.getElementById('btc-output');
+    const btcPriceEl = document.getElementById('btc-price');
+    const finalBrl = document.getElementById('final-brl');
+    const finalBtcValue = document.getElementById('final-btc-value');
+    const finalBtc = document.getElementById('final-btc');
 
-  // Atualiza BTC e valida em tempo real
-  function updateCalculator() {
-    let brl = parseFloat(brlInput.value) || 0;
-    const btc = brl / BTC_PRICE;
-
-    // Sempre mostra BTC (mesmo abaixo do mínimo)
-    btcOutput.value = btc.toFixed(8);
-
-    // Validação visual e do botão
-    if (brl < MIN_BRL) {
-      brlInput.classList.add('border-red-500');
-      minWarning.classList.remove('hidden');
-      buyButton.disabled = true;
-      buyButton.classList.add('opacity-60', 'cursor-not-allowed');
-      buyButton.classList.remove('hover:transform', 'hover:shadow-lg');
-    } else {
-      brlInput.classList.remove('border-red-500');
-      minWarning.classList.add('hidden');
-      buyButton.disabled = false;
-      buyButton.classList.remove('opacity-60', 'cursor-not-allowed');
-      buyButton.classList.add('hover:transform', 'hover:shadow-lg');
-    }
-  }
-
-  // Input em tempo real
-  brlInput.addEventListener('input', () => {
-    let value = brlInput.value.replace(/[^0-9.,]/g, '').replace(',', '.');
-    brlInput.value = value;
-    updateCalculator();
-  });
-
-  // Inicializa
-  function initCalculator() {
-    brlInput.value = MIN_BRL;
-    updateCalculator();
-  }
-
-  // Vai pro checkout (só se válido)
-  function goToCheckout() {
-    const brl = parseFloat(brlInput.value);
-    if (brl < MIN_BRL) {
-      showToast('Valor mínimo de compra: R$300,00', 'error');
-      return;
-    }
-    const btc = brl / BTC_PRICE;
-    document.getElementById('final-brl').textContent = `R$${brl.toFixed(2).replace('.', ',')}`;
-    document.getElementById('final-btc-value').textContent = `${btc.toFixed(8)} BTC`;
-    document.getElementById('final-btc').textContent = `${btc.toFixed(8)}`;
-    document.getElementById('checkout-modal').classList.remove('hidden');
-  }
-
-  function closeCheckout() {
-    document.getElementById('checkout-modal').classList.add('hidden');
-  }
-
-  function proceedToPayment() {
-    const address = document.getElementById('btc-address').value.trim();
-    if (!address || !/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$/.test(address)) {
-      showToast('Endereço BTC inválido.', 'error');
-      return;
+    // Calcula BTC fixo para R$540
+    function updateCalculator() {
+      const brl = FIXED_BRL;
+      const btc = brl / BTC_PRICE;
+      btcOutput.value = btc.toFixed(8);
+      finalBrl.textContent = `R$${brl.toFixed(2).replace('.', ',')}`;
+      finalBtcValue.textContent = `${btc.toFixed(8)} BTC`;
+      finalBtc.textContent = `${btc.toFixed(8)}`;
     }
 
-    const brl = parseFloat(brlInput.value);
-    const btc = (brl / BTC_PRICE).toFixed(8);
-    const checkoutUrl = `https://seucheckout.com/pay?amount=${brl}&btc=${btc}&address=${encodeURIComponent(address)}&ref=quantumvault`;
-    window.location.href = checkoutUrl;
-  }
+    // Bloqueia input de R$
+    brlInput.addEventListener('input', () => {
+      brlInput.value = '540,00';
+    });
 
-  // Atualiza preço do BTC a cada 30s
-  setInterval(() => {
-    const variation = (Math.random() - 0.5) * 2000;
-    BTC_PRICE = 432187.42 + variation;
-    btcPriceEl.textContent = `R$${BTC_PRICE.toFixed(2).replace('.', ',')}`;
+    brlInput.addEventListener('focus', () => {
+      brlInput.blur(); // Desfoca pra não editar
+    });
+
+    // Vai pro checkout
+    function goToCheckout() {
+      document.getElementById('checkout-modal').classList.remove('hidden');
+    }
+
+    function closeCheckout() {
+      document.getElementById('checkout-modal').classList.add('hidden');
+    }
+
+    function proceedToPayment() {
+      const address = document.getElementById('btc-address').value.trim();
+      if (!address || !/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$/.test(address)) {
+        showToast('Endereço BTC inválido.', 'error');
+        return;
+      }
+
+      const brl = FIXED_BRL;
+      const btc = (brl / BTC_PRICE).toFixed(8);
+      const checkoutUrl = `https://seucheckout.com/pay?amount=${brl}&btc=${btc}&address=${encodeURIComponent(address)}&ref=quantumvault`;
+      window.location.href = checkoutUrl;
+    }
+
+    // Atualiza preço do BTC a cada 30s
+    setInterval(() => {
+      const variation = (Math.random() - 0.5) * 2000;
+      BTC_PRICE = 432187.42 + variation;
+      btcPriceEl.textContent = `R$${BTC_PRICE.toFixed(2).replace('.', ',')}`;
+      updateCalculator();
+    }, 30000);
+
+    // Toast
+    function showToast(message, type = 'error') {
+      const toast = document.createElement('div');
+      toast.className = `fixed bottom-6 right-6 px-6 py-3 rounded-xl text-white font-medium shadow-xl z-50 transition-all duration-300 ${
+        type === 'error' ? 'bg-red-600' : 'bg-green-600'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Init
     updateCalculator();
-  }, 30000);
-
-  // Toast personalizado
-  function showToast(message, type = 'error') {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-6 right-6 px-6 py-3 rounded-xl text-white font-medium shadow-xl z-50 transition-all duration-300 ${
-      type === 'error' ? 'bg-red-600' : 'bg-green-600'
-    }`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-  }
-
-  // Init
-  initCalculator();
-</script>
+  </script>
 </body>
 </html>
